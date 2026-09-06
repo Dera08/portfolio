@@ -23,7 +23,7 @@ class SkillController extends Controller
         $validated = $request->validate([
             // 'user_id'     => 'required|exists:users,id', // Décommenter si non géré par auth()->id()
             'titre'       => 'required|string|max:50',
-            'description' => 'required|string',
+            'description' => 'nullable|string',
             'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Modifié pour un fichier (j'ai ajouté 'svg' qui est très commun pour les logos de compétences)
             'niveau'      => 'required|string|max:50', // Correction : 'string 50' était une syntaxe invalide
         ]);
@@ -33,7 +33,7 @@ class SkillController extends Controller
             $validated['image'] = $request->file('image')->store('skills', 'public');
         }
 
-        // $validated['user_id'] = auth()->id();
+        $validated['user_id'] = auth()->id();
 
         Skill::create($validated);
 

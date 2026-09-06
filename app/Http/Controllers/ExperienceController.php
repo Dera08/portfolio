@@ -29,7 +29,7 @@ class ExperienceController extends Controller
         ]);
 
         // Assignation de l'utilisateur connecté (si applicable)
-        // $validated['user_id'] = auth()->id();
+        $validated['user_id'] = auth()->id();
 
         Experience::create($validated);
 

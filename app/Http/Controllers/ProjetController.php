@@ -48,7 +48,7 @@ class ProjetController extends Controller
             $validated['image'] = $request->file('image')->store('projets', 'public');
         }
 
-        // $validated['user_id'] = auth()->id();
+        $validated['user_id'] = auth()->id();
 
         Projet::create($validated);
 

@@ -1,185 +1,232 @@
- <x-app-layout>
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            Compétences
+        </h2>
+    </x-slot>
 
-@section('title', 'Gestion des Compétences')
-
-@section('content')
-<div class="space-y-8">
-    <!-- En-tête -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-zinc-100">Compétences</h1>
-            <p class="text-sm text-zinc-400 mt-1">Gérez vos compétences techniques et leur niveau de maîtrise.</p>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <!-- FORMULAIRE D'AJOUT (1 colonne sur grand écran) -->
-        <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-6 shadow-xl lg:col-span-1">
-            <h2 class="text-lg font-bold text-zinc-100 mb-4 flex items-center gap-2">
-                <span class="text-orange-500">+</span> Ajouter une compétence
-            </h2>
-
-            <form action="{{ route('skills.store') }}" method="POST" class="space-y-4">
-                @csrf
-
-                <!-- Nom de la compétence -->
-                <div>
-                    <label for="name" class="block text-sm font-medium text-zinc-300 mb-1">Nom <span class="text-orange-500">*</span></label>
-                    <input type="text" name="name" id="name" value="{{ old('name') }}" placeholder="Ex: Tailwind CSS, Laravel, React" 
-                        @class([
-                            'w-full bg-zinc-900 border rounded-lg px-3.5 py-2 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm transition',
-                            'border-red-500' => $errors->has('name'),
-                            'border-zinc-800' => !$errors->has('name')
-                        ]) required>
-                    @error('name')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Catégorie -->
-                <div>
-                    <label for="category" class="block text-sm font-medium text-zinc-300 mb-1">Catégorie</label>
-                    <input type="text" name="category" id="category" value="{{ old('category') }}" placeholder="Ex: Frontend, Backend, Database" 
-                        class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3.5 py-2 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm transition">
-                </div>
-
-                <!-- Niveau / Pourcentage -->
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label for="level" class="block text-sm font-medium text-zinc-300">Niveau (%)</label>
-                        <span id="level-value" class="text-xs font-bold text-orange-500">80%</span>
-                    </div>
-                    <input type="range" name="level" id="level" min="0" max="100" value="{{ old('level', 80) }}" 
-                        class="w-full accent-orange-500 cursor-pointer bg-zinc-800 rounded-lg">
-                </div>
-
-                <!-- Bouton Soumettre -->
-                <button type="submit" id="btn-submit-skill" class="w-full mt-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium rounded-lg shadow-md transition duration-150 flex items-center justify-center">
-                    <span>Ajouter la compétence</span>
-                </button>
-            </form>
-        </div>
-
-        <!-- LISTE DES COMPÉTENCES (2 colonnes sur grand écran) -->
-        <div class="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-xl lg:col-span-2">
-            <div class="p-4 border-b border-zinc-800 bg-zinc-900/50 flex justify-between items-center">
-                <h2 class="text-md font-semibold text-zinc-200">Compétences enregistrées</h2>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm text-zinc-300">
-                    <thead class="bg-zinc-900 text-xs uppercase text-zinc-400 border-b border-zinc-800">
-                        <tr>
-                            <th scope="col" class="px-6 py-3">Compétence</th>
-                            <th scope="col" class="px-6 py-3">Catégorie</th>
-                            <th scope="col" class="px-6 py-3">Niveau</th>
-                            <th scope="col" class="px-6 py-3 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-800">
-                        @forelse($skills as $skill)
-                            <tr class="hover:bg-zinc-900/40 transition">
-                                <td class="px-6 py-4 font-semibold text-zinc-100">
-                                    {{ $skill->name ?? $skill->nom }}
-                                </td>
-                                <td class="px-6 py-4 text-xs text-zinc-400">
-                                    <span class="px-2 py-1 rounded-md bg-zinc-800 border border-zinc-700">
-                                        {{ $skill->category ?? $skill->categorie ?? 'Général' }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 w-48">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
-                                            <div class="bg-orange-500 h-2 rounded-full" style="width: {{ $skill->level ?? $skill->niveau ?? 0 }}%"></div>
-                                        </div>
-                                        <span class="text-xs font-bold text-zinc-400">{{ $skill->level ?? $skill->niveau ?? 0 }}%</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <form action="{{ route('skills.destroy', $skill) }}" method="POST" class="inline-block form-delete-skill">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button" class="btn-delete-skill text-zinc-500 hover:text-red-400 transition" title="Supprimer">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                            </svg>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="px-6 py-10 text-center text-zinc-500">
-                                    Aucune compétence enregistrée pour le moment.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modale de confirmation de suppression -->
-<div id="delete-skill-modal" class="fixed inset-0 z-50 hidden bg-zinc-950/80 backdrop-blur-sm items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4">
-        <h3 class="text-lg font-bold text-zinc-100">Supprimer la compétence</h3>
-        <p class="text-sm text-zinc-400">Voulez-vous vraiment retirer cette compétence ? Cette action est irréversible.</p>
-        <div class="flex justify-end space-x-3 pt-2">
-            <button id="modal-skill-cancel" type="button" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-lg transition">Annuler</button>
-            <button id="modal-skill-confirm" type="button" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition">Supprimer</button>
-        </div>
-    </div>
-</div>
-@endsection
-
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // 1. Mise à jour dynamique de la valeur du Range Input
-        const levelRange = document.getElementById('level');
-        const levelValue = document.getElementById('level-value');
-
-        if (levelRange && levelValue) {
-            levelRange.addEventListener('input', (e) => {
-                levelValue.textContent = `${e.target.value}%`;
-            });
+    <style>
+        .kgv-admin{
+            --bg: #0A0C10; --surface: #13161C; --border: #22262E;
+            --text: #ECEDEE; --text-dim: #92979F; --accent: #B08949;
+            background:var(--bg); color:var(--text);
+            font-family:'Inter',sans-serif;
         }
+        .kgv-admin h1,.kgv-admin h2{font-family:'Fraunces',serif;font-weight:500;}
+        .kgv-admin label{display:block;font-size:0.8rem;color:var(--text-dim);margin-bottom:8px;}
+        .kgv-admin input[type=text],
+        .kgv-admin input[type=file],
+        .kgv-admin textarea{
+            width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);
+            padding:11px 14px;border-radius:2px;font-family:inherit;font-size:0.9rem;
+        }
+        .kgv-admin input:focus, .kgv-admin textarea:focus{outline:none;border-color:var(--accent);}
+        .kgv-admin .field{margin-bottom:20px;}
+        .kgv-admin .field-error{color:#e08b8b;font-size:0.8rem;margin-top:6px;}
+        .kgv-admin .required{color:var(--accent);}
+        .kgv-panel{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:28px;}
+        .kgv-admin input[type=range]{width:100%;accent-color:var(--accent);}
+        .kgv-level-value{font-size:0.8rem;font-weight:600;color:var(--accent);}
+        .kgv-admin .btn-submit{
+            width:100%;background:var(--accent);color:#0A0C10;font-weight:600;font-size:0.9rem;
+            padding:12px 20px;border:none;border-radius:2px;cursor:pointer;transition:background .2s;margin-top:6px;
+        }
+        .kgv-admin .btn-submit:hover{background:#c49957;}
 
-        // 2. Modale de suppression personnalisée
-        const deleteModal = document.getElementById('delete-skill-modal');
-        const cancelBtn = document.getElementById('modal-skill-cancel');
-        const confirmBtn = document.getElementById('modal-skill-confirm');
-        let formToSubmit = null;
+        .kgv-admin table{width:100%;border-collapse:collapse;}
+        .kgv-admin thead th{
+            text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.03em;
+            color:var(--text-dim);font-weight:500;padding:12px 16px;border-bottom:1px solid var(--border);
+        }
+        .kgv-admin tbody td{padding:16px;border-bottom:1px solid var(--border);font-size:0.88rem;vertical-align:middle;}
+        .kgv-admin tbody tr:hover{background:rgba(255,255,255,0.02);}
+        .kgv-admin .skill-name{font-weight:600;}
+        .kgv-admin .skill-desc{color:var(--text-dim);font-size:0.8rem;margin-top:2px;}
+        .kgv-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden;width:100%;}
+        .kgv-fill{height:100%;background:var(--accent);}
+        .kgv-admin .action-delete{color:#e08b8b;background:none;border:none;cursor:pointer;font-family:inherit;font-size:0.85rem;}
+        .kgv-admin .empty-row{text-align:center;padding:40px 16px;color:var(--text-dim);}
+        .panel-title{font-size:1.05rem;margin-bottom:20px;display:flex;align-items:center;gap:8px;}
 
-        document.querySelectorAll('.btn-delete-skill').forEach(button => {
-            button.addEventListener('click', (event) => {
-                formToSubmit = event.target.closest('.form-delete-skill');
-                deleteModal.classList.remove('hidden');
-                deleteModal.classList.add('flex');
+        .kgv-modal-overlay{
+            position:fixed;inset:0;z-index:50;background:rgba(0,0,0,0.6);
+            display:none;align-items:center;justify-content:center;padding:16px;
+        }
+        .kgv-modal-overlay.open{display:flex;}
+        .kgv-modal-box{background:#13161C;border:1px solid #22262E;border-radius:4px;max-width:420px;width:100%;padding:28px;}
+        .kgv-modal-box h3{font-family:'Fraunces',serif;font-weight:500;color:#ECEDEE;font-size:1.1rem;margin-bottom:10px;}
+        .kgv-modal-box p{color:#92979F;font-size:0.85rem;margin-bottom:22px;}
+        .kgv-modal-actions{display:flex;justify-content:flex-end;gap:12px;}
+        .kgv-modal-cancel{background:none;border:1px solid #22262E;color:#ECEDEE;padding:9px 16px;border-radius:2px;font-size:0.85rem;cursor:pointer;}
+        .kgv-modal-confirm{background:#c0524f;border:none;color:#fff;padding:9px 16px;border-radius:2px;font-size:0.85rem;cursor:pointer;}
+    </style>
+
+    <div class="py-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 kgv-admin">
+            <div style="margin-bottom:28px;">
+                <h1 style="font-size:1.5rem;">Compétences</h1>
+                <p style="color:var(--text-dim);font-size:0.9rem;margin-top:4px;">
+                    Gérez vos compétences techniques et leur niveau de maîtrise.
+                </p>
+            </div>
+
+            @if(session('success'))
+                <div style="background:rgba(176,137,73,0.1);border:1px solid var(--accent);color:var(--accent);padding:12px 16px;border-radius:2px;font-size:0.85rem;margin-bottom:24px;">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            <div style="display:grid;grid-template-columns:1fr;gap:24px;">
+                <div class="kgv-grid" style="display:grid;grid-template-columns:1fr;gap:24px;">
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr;gap:24px;" class="skills-layout">
+                <!-- FORMULAIRE -->
+                <div class="kgv-panel">
+                    <h2 class="panel-title">Ajouter une compétence</h2>
+
+                    <form action="{{ route('skills.store') }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+
+                        <div class="field">
+                            <label for="titre">Nom <span class="required">*</span></label>
+                            <input type="text" name="titre" id="titre" value="{{ old('titre') }}" placeholder="Ex : Laravel, React, Tailwind CSS" required>
+                            @error('titre') <div class="field-error">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="field">
+                            <label for="description">Description</label>
+                            <textarea name="description" id="description" rows="2" placeholder="Ex : Développement backend, API REST...">{{ old('description') }}</textarea>
+                            @error('description') <div class="field-error">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="field">
+                            <label for="image">Logo / Icône</label>
+                            <input type="file" name="image" id="image">
+                            @error('image') <div class="field-error">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="field">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                                <label for="niveau" style="margin-bottom:0;">Niveau</label>
+                                <span id="niveau-value" class="kgv-level-value">{{ old('niveau', 80) }}%</span>
+                            </div>
+                            <input type="range" name="niveau" id="niveau" min="0" max="100" value="{{ old('niveau', 80) }}">
+                            @error('niveau') <div class="field-error">{{ $message }}</div> @enderror
+                        </div>
+
+                        <button type="submit" class="btn-submit">Ajouter la compétence</button>
+                    </form>
+                </div>
+
+                <!-- LISTE -->
+                <div class="kgv-panel">
+                    <h2 class="panel-title">Compétences enregistrées</h2>
+
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Compétence</th>
+                                    <th>Niveau</th>
+                                    <th style="text-align:right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($skills as $skill)
+                                    <tr>
+                                        <td>
+                                            <div class="skill-name">{{ $skill->titre }}</div>
+                                            @if($skill->description)
+                                                <div class="skill-desc">{{ $skill->description }}</div>
+                                            @endif
+                                        </td>
+                                        <td style="width:200px;">
+                                            <div style="display:flex;align-items:center;gap:10px;">
+                                                <div class="kgv-track">
+                                                    <div class="kgv-fill" style="width: {{ is_numeric($skill->niveau) ? $skill->niveau : 70 }}%"></div>
+                                                </div>
+                                                <span style="font-size:0.78rem;color:var(--text-dim);white-space:nowrap;">{{ $skill->niveau }}{{ is_numeric($skill->niveau) ? '%' : '' }}</span>
+                                            </div>
+                                        </td>
+                                        <td style="text-align:right;">
+                                            <form action="{{ route('skills.destroy', $skill) }}" method="POST" class="form-delete-skill" style="display:inline;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="button" class="btn-delete-skill action-delete">Supprimer</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="empty-row">Aucune compétence enregistrée pour le moment.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale de suppression -->
+    <div id="delete-skill-modal" class="kgv-modal-overlay">
+        <div class="kgv-modal-box">
+            <h3>Supprimer la compétence</h3>
+            <p>Voulez-vous vraiment retirer cette compétence ? Cette action est irréversible.</p>
+            <div class="kgv-modal-actions">
+                <button id="modal-skill-cancel" type="button" class="kgv-modal-cancel">Annuler</button>
+                <button id="modal-skill-confirm" type="button" class="kgv-modal-confirm">Supprimer</button>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+    <style>
+        @media(min-width:1024px){
+            .skills-layout{ grid-template-columns: 1fr 2fr !important; align-items:start; }
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const niveauRange = document.getElementById('niveau');
+            const niveauValue = document.getElementById('niveau-value');
+            if (niveauRange && niveauValue) {
+                niveauRange.addEventListener('input', (e) => {
+                    niveauValue.textContent = `${e.target.value}%`;
+                });
+            }
+
+            const deleteModal = document.getElementById('delete-skill-modal');
+            const cancelBtn = document.getElementById('modal-skill-cancel');
+            const confirmBtn = document.getElementById('modal-skill-confirm');
+            let formToSubmit = null;
+
+            document.querySelectorAll('.btn-delete-skill').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    formToSubmit = event.currentTarget.closest('.form-delete-skill');
+                    deleteModal.classList.add('open');
+                });
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                deleteModal.classList.remove('open');
+                formToSubmit = null;
+            });
+
+            confirmBtn.addEventListener('click', () => {
+                if (formToSubmit) formToSubmit.submit();
+            });
+
+            deleteModal.addEventListener('click', (event) => {
+                if (event.target === deleteModal) {
+                    deleteModal.classList.remove('open');
+                    formToSubmit = null;
+                }
             });
         });
-
-        cancelBtn.addEventListener('click', () => {
-            deleteModal.classList.add('hidden');
-            deleteModal.classList.remove('flex');
-            formToSubmit = null;
-        });
-
-        confirmBtn.addEventListener('click', () => {
-            if (formToSubmit) {
-                formToSubmit.submit();
-            }
-        });
-
-        deleteModal.addEventListener('click', (event) => {
-            if (event.target === deleteModal) {
-                deleteModal.classList.add('hidden');
-                deleteModal.classList.remove('flex');
-                formToSubmit = null;
-            }
-        });
-    });
-</script>
+    </script>
+    @endpush
 </x-app-layout>

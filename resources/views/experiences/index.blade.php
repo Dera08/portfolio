@@ -1,200 +1,232 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            Expériences
+        </h2>
+    </x-slot>
 
-@section('title', 'Gestion des Expériences')
+    <style>
+        .kgv-admin{
+            --bg: #0A0C10; --surface: #13161C; --border: #22262E;
+            --text: #ECEDEE; --text-dim: #92979F; --accent: #B08949;
+            background:var(--bg); color:var(--text);
+            font-family:'Inter',sans-serif;
+        }
+        .kgv-admin h1,.kgv-admin h2{font-family:'Fraunces',serif;font-weight:500;}
+        .kgv-admin label{display:block;font-size:0.8rem;color:var(--text-dim);margin-bottom:8px;}
+        .kgv-admin input[type=text],
+        .kgv-admin input[type=date],
+        .kgv-admin textarea{
+            width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);
+            padding:11px 14px;border-radius:2px;font-family:inherit;font-size:0.9rem;
+        }
+        .kgv-admin input:focus, .kgv-admin textarea:focus{outline:none;border-color:var(--accent);}
+        .kgv-admin input:disabled{opacity:0.4;cursor:not-allowed;}
+        .kgv-admin .field{margin-bottom:20px;}
+        .kgv-admin .field-error{color:#e08b8b;font-size:0.8rem;margin-top:6px;}
+        .kgv-admin .required{color:var(--accent);}
+        .kgv-panel{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:28px;}
+        .panel-title{font-size:1.05rem;margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+        .kgv-admin .row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        .kgv-admin .checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:20px;font-size:0.82rem;color:var(--text-dim);}
+        .kgv-admin .checkbox-row input{accent-color:var(--accent);}
+        .kgv-admin .btn-submit{
+            width:100%;background:var(--accent);color:#0A0C10;font-weight:600;font-size:0.9rem;
+            padding:12px 20px;border:none;border-radius:2px;cursor:pointer;transition:background .2s;margin-top:6px;
+        }
+        .kgv-admin .btn-submit:hover{background:#c49957;}
 
-@section('content')
-<div class="space-y-8">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-zinc-100">Expériences</h1>
-            <p class="text-sm text-zinc-400 mt-1">Gérez vos parcours professionnels, formations et projets significatifs.</p>
-        </div>
-    </div>
+        .exp-item{padding:24px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:16px;align-items:flex-start;}
+        .exp-item:last-child{border-bottom:none;}
+        .exp-title-row{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+        .exp-title{font-size:1rem;font-weight:600;}
+        .exp-badge{
+            font-size:0.7rem;font-weight:600;padding:3px 10px;border-radius:10px;
+            background:rgba(176,137,73,0.12);color:var(--accent);border:1px solid rgba(176,137,73,0.3);
+        }
+        .exp-org{color:var(--accent);font-size:0.88rem;font-weight:500;margin-bottom:6px;}
+        .exp-dates{color:var(--text-dim);font-size:0.8rem;display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+        .exp-desc{color:#c7cad0;font-size:0.88rem;line-height:1.6;}
+        .action-delete{color:#e08b8b;background:none;border:none;cursor:pointer;font-family:inherit;font-size:0.85rem;flex-shrink:0;}
+        .empty-note{text-align:center;padding:48px 16px;color:var(--text-dim);}
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-6 shadow-xl lg:col-span-1">
-            <h2 class="text-lg font-bold text-zinc-100 mb-4 flex items-center gap-2">
-                <span class="text-orange-500">+</span> Ajouter une expérience
-            </h2>
+        .kgv-modal-overlay{
+            position:fixed;inset:0;z-index:50;background:rgba(0,0,0,0.6);
+            display:none;align-items:center;justify-content:center;padding:16px;
+        }
+        .kgv-modal-overlay.open{display:flex;}
+        .kgv-modal-box{background:#13161C;border:1px solid #22262E;border-radius:4px;max-width:420px;width:100%;padding:28px;}
+        .kgv-modal-box h3{font-family:'Fraunces',serif;font-weight:500;color:#ECEDEE;font-size:1.1rem;margin-bottom:10px;}
+        .kgv-modal-box p{color:#92979F;font-size:0.85rem;margin-bottom:22px;}
+        .kgv-modal-actions{display:flex;justify-content:flex-end;gap:12px;}
+        .kgv-modal-cancel{background:none;border:1px solid #22262E;color:#ECEDEE;padding:9px 16px;border-radius:2px;font-size:0.85rem;cursor:pointer;}
+        .kgv-modal-confirm{background:#c0524f;border:none;color:#fff;padding:9px 16px;border-radius:2px;font-size:0.85rem;cursor:pointer;}
 
-            <form action="{{ route('experiences.store') }}" method="POST" class="space-y-4">
-                @csrf
+        @media(min-width:1024px){
+            .experiences-layout{ grid-template-columns: 1fr 2fr !important; align-items:start; }
+        }
+    </style>
 
-                <div>
-                    <label for="title" class="block text-sm font-medium text-zinc-300 mb-1">Poste / Rôle <span class="text-orange-500">*</span></label>
-                    <input type="text" name="title" id="title" value="{{ old('title') }}" placeholder="Ex: Développeur Full Stack" 
-                        @class([
-                            'w-full bg-zinc-900 border rounded-lg px-3.5 py-2 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm transition',
-                            'border-red-500' => $errors->has('title'),
-                            'border-zinc-800' => !$errors->has('title')
-                        ]) required>
-                    @error('title')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="company" class="block text-sm font-medium text-zinc-300 mb-1">Entreprise / École <span class="text-orange-500">*</span></label>
-                    <input type="text" name="company" id="company" value="{{ old('company') }}" placeholder="Ex: Tech Company / Université" 
-                        @class([
-                            'w-full bg-zinc-900 border rounded-lg px-3.5 py-2 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm transition',
-                            'border-red-500' => $errors->has('company'),
-                            'border-zinc-800' => !$errors->has('company')
-                        ]) required>
-                    @error('company')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label for="start_date" class="block text-sm font-medium text-zinc-300 mb-1">Début</label>
-                        <input type="date" name="start_date" id="start_date" value="{{ old('start_date') }}" 
-                            class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm transition">
-                    </div>
-
-                    <div>
-                        <label for="end_date" class="block text-sm font-medium text-zinc-300 mb-1">Fin</label>
-                        <input type="date" name="end_date" id="end_date" value="{{ old('end_date') }}" 
-                            class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm transition">
-                    </div>
-                </div>
-
-                <div class="flex items-center space-x-2 pt-1">
-                    <input type="checkbox" name="is_current" id="is_current" value="1" {{ old('is_current') ? 'checked' : '' }}
-                        class="rounded bg-zinc-900 border-zinc-800 text-orange-500 focus:ring-orange-500 h-4 w-4">
-                    <label for="is_current" class="text-xs text-zinc-400">J'occupe actuellement ce poste</label>
-                </div>
-
-                <div>
-                    <label for="description" class="block text-sm font-medium text-zinc-300 mb-1">Description</label>
-                    <textarea name="description" id="description" rows="3" placeholder="Missions réalisées, technologies utilisées..."
-                        class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3.5 py-2 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm transition">{{ old('description') }}</textarea>
-                </div>
-
-                <button type="submit" class="w-full mt-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium rounded-lg shadow-md transition duration-150 flex items-center justify-center">
-                    <span>Ajouter l'expérience</span>
-                </button>
-            </form>
-        </div>
-
-        <div class="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-xl lg:col-span-2">
-            <div class="p-4 border-b border-zinc-800 bg-zinc-900/50">
-                <h2 class="text-md font-semibold text-zinc-200">Parcours & Expériences</h2>
+    <div class="py-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 kgv-admin">
+            <div style="margin-bottom:28px;">
+                <h1 style="font-size:1.5rem;">Expériences</h1>
+                <p style="color:var(--text-dim);font-size:0.9rem;margin-top:4px;">
+                    Gérez vos parcours professionnels, formations et projets significatifs.
+                </p>
             </div>
 
-            <div class="divide-y divide-zinc-800">
-                @forelse($experiences as $experience)
-                    <div class="p-6 hover:bg-zinc-900/40 transition flex items-start justify-between gap-4">
-                        <div class="space-y-1.5 flex-1">
-                            <div class="flex items-center gap-3">
-                                <h3 class="text-base font-bold text-zinc-100">{{ $experience->title ?? $experience->titre ?? $experience->post }}</h3>
-                                @if($experience->is_current)
-                                    <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">En cours</span>
-                                @endif
-                            </div>
-                            
-                            <p class="text-sm font-medium text-orange-500">{{ $experience->company ?? $experience->entreprise }}</p>
-                            
-                            <p class="text-xs text-zinc-400 flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                {{ $experience->start_date ? \Carbon\Carbon::parse($experience->start_date)->format('m/Y') : 'N/A' }} 
-                                - 
-                                {{ $experience->is_current ? 'Présent' : ($experience->end_date ? \Carbon\Carbon::parse($experience->end_date)->format('m/Y') : 'N/A') }}
-                            </p>
+            @if(session('success'))
+                <div style="background:rgba(176,137,73,0.1);border:1px solid var(--accent);color:var(--accent);padding:12px 16px;border-radius:2px;font-size:0.85rem;margin-bottom:24px;">
+                    {{ session('success') }}
+                </div>
+            @endif
 
-                            @if($experience->description)
-                                <p class="text-sm text-zinc-400 pt-2 leading-relaxed">{{ $experience->description }}</p>
-                            @endif
+            <div style="display:grid;grid-template-columns:1fr;gap:24px;" class="experiences-layout">
+                <!-- FORMULAIRE -->
+                <div class="kgv-panel">
+                    <h2 class="panel-title">Ajouter une expérience</h2>
+
+                    <form action="{{ route('experiences.store') }}" method="POST">
+                        @csrf
+
+                        <div class="field">
+                            <label for="poste_ou_diplome">Poste / Diplôme <span class="required">*</span></label>
+                            <input type="text" name="poste_ou_diplome" id="poste_ou_diplome" value="{{ old('poste_ou_diplome') }}" placeholder="Ex : Développeuse Full Stack" required>
+                            @error('poste_ou_diplome') <div class="field-error">{{ $message }}</div> @enderror
                         </div>
 
-                        <form action="{{ route('experiences.destroy', $experience) }}" method="POST" class="form-delete-exp">
-                            @csrf
-                            @method('DELETE')
-                            <button type="button" class="btn-delete-exp text-zinc-500 hover:text-red-400 transition p-1" title="Supprimer">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                            </button>
-                        </form>
+                        <div class="field">
+                            <label for="entreprise">Entreprise / École <span class="required">*</span></label>
+                            <input type="text" name="entreprise" id="entreprise" value="{{ old('entreprise') }}" placeholder="Ex : Tech Company / Université" required>
+                            @error('entreprise') <div class="field-error">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="field row-2">
+                            <div>
+                                <label for="date_debut">Début <span class="required">*</span></label>
+                                <input type="date" name="date_debut" id="date_debut" value="{{ old('date_debut') }}" required>
+                                @error('date_debut') <div class="field-error">{{ $message }}</div> @enderror
+                            </div>
+                            <div>
+                                <label for="date_fin">Fin</label>
+                                <input type="date" name="date_fin" id="date_fin" value="{{ old('date_fin') }}">
+                                @error('date_fin') <div class="field-error">{{ $message }}</div> @enderror
+                            </div>
+                        </div>
+
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="is_current">
+                            <label for="is_current" style="margin-bottom:0;">J'occupe actuellement ce poste</label>
+                        </div>
+
+                        <div class="field">
+                            <label for="description">Description <span class="required">*</span></label>
+                            <textarea name="description" id="description" rows="3" placeholder="Missions réalisées, technologies utilisées..." required>{{ old('description') }}</textarea>
+                            @error('description') <div class="field-error">{{ $message }}</div> @enderror
+                        </div>
+
+                        <button type="submit" class="btn-submit">Ajouter l'expérience</button>
+                    </form>
+                </div>
+
+                <!-- LISTE -->
+                <div class="kgv-panel">
+                    <h2 class="panel-title">Parcours &amp; Expériences</h2>
+
+                    <div>
+                        @forelse($experiences as $experience)
+                            <div class="exp-item">
+                                <div style="flex:1;">
+                                    <div class="exp-title-row">
+                                        <span class="exp-title">{{ $experience->poste_ou_diplome }}</span>
+                                        @if(!$experience->date_fin)
+                                            <span class="exp-badge">En cours</span>
+                                        @endif
+                                    </div>
+                                    <div class="exp-org">{{ $experience->entreprise }}</div>
+                                    <div class="exp-dates">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                        {{ $experience->date_debut ? \Illuminate\Support\Carbon::parse($experience->date_debut)->format('m/Y') : 'N/A' }}
+                                        —
+                                        {{ $experience->date_fin ? \Illuminate\Support\Carbon::parse($experience->date_fin)->format('m/Y') : 'Présent' }}
+                                    </div>
+                                    @if($experience->description)
+                                        <div class="exp-desc">{{ $experience->description }}</div>
+                                    @endif
+                                </div>
+
+                                <form action="{{ route('experiences.destroy', $experience) }}" method="POST" class="form-delete-exp">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="btn-delete-exp action-delete">Supprimer</button>
+                                </form>
+                            </div>
+                        @empty
+                            <div class="empty-note">Aucune expérience renseignée pour le moment.</div>
+                        @endforelse
                     </div>
-                @empty
-                    <div class="p-10 text-center text-zinc-500 text-sm">
-                        Aucune expérience renseignée pour le moment.
-                    </div>
-                @endforelse
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<div id="delete-exp-modal" class="fixed inset-0 z-50 hidden bg-zinc-950/80 backdrop-blur-sm items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4">
-        <h3 class="text-lg font-bold text-zinc-100">Supprimer l'expérience</h3>
-        <p class="text-sm text-zinc-400">Voulez-vous vraiment retirer cette expérience ? Cette action est irréversible.</p>
-        <div class="flex justify-end space-x-3 pt-2">
-            <button id="modal-exp-cancel" type="button" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-lg transition">Annuler</button>
-            <button id="modal-exp-confirm" type="button" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition">Supprimer</button>
+    <!-- Modale de suppression -->
+    <div id="delete-exp-modal" class="kgv-modal-overlay">
+        <div class="kgv-modal-box">
+            <h3>Supprimer l'expérience</h3>
+            <p>Voulez-vous vraiment retirer cette expérience ? Cette action est irréversible.</p>
+            <div class="kgv-modal-actions">
+                <button id="modal-exp-cancel" type="button" class="kgv-modal-cancel">Annuler</button>
+                <button id="modal-exp-confirm" type="button" class="kgv-modal-confirm">Supprimer</button>
+            </div>
         </div>
     </div>
-</div>
-@endsection
 
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Désactivation/activation dynamique du champ date de fin selon "J'occupe actuellement ce poste"
-        const currentCheckbox = document.getElementById('is_current');
-        const endDateInput = document.getElementById('end_date');
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentCheckbox = document.getElementById('is_current');
+            const endDateInput = document.getElementById('date_fin');
 
-        if (currentCheckbox && endDateInput) {
-            const toggleEndDate = () => {
-                endDateInput.disabled = currentCheckbox.checked;
-                if (currentCheckbox.checked) {
-                    endDateInput.value = '';
-                    endDateInput.classList.add('opacity-50', 'cursor-not-allowed');
-                } else {
-                    endDateInput.classList.remove('opacity-50', 'cursor-not-allowed');
+            if (currentCheckbox && endDateInput) {
+                const toggleEndDate = () => {
+                    endDateInput.disabled = currentCheckbox.checked;
+                    if (currentCheckbox.checked) endDateInput.value = '';
+                };
+                currentCheckbox.addEventListener('change', toggleEndDate);
+            }
+
+            const deleteModal = document.getElementById('delete-exp-modal');
+            const cancelBtn = document.getElementById('modal-exp-cancel');
+            const confirmBtn = document.getElementById('modal-exp-confirm');
+            let formToSubmit = null;
+
+            document.querySelectorAll('.btn-delete-exp').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    formToSubmit = event.target.closest('.form-delete-exp');
+                    deleteModal.classList.add('open');
+                });
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                deleteModal.classList.remove('open');
+                formToSubmit = null;
+            });
+
+            confirmBtn.addEventListener('click', () => {
+                if (formToSubmit) formToSubmit.submit();
+            });
+
+            deleteModal.addEventListener('click', (event) => {
+                if (event.target === deleteModal) {
+                    deleteModal.classList.remove('open');
+                    formToSubmit = null;
                 }
-            };
-            
-            toggleEndDate();
-            currentCheckbox.addEventListener('change', toggleEndDate);
-        }
-
-        // Modale de suppression
-        const deleteModal = document.getElementById('delete-exp-modal');
-        const cancelBtn = document.getElementById('modal-exp-cancel');
-        const confirmBtn = document.getElementById('modal-exp-confirm');
-        let formToSubmit = null;
-
-        document.querySelectorAll('.btn-delete-exp').forEach(button => {
-            button.addEventListener('click', (event) => {
-                formToSubmit = event.target.closest('.form-delete-exp');
-                deleteModal.classList.remove('hidden');
-                deleteModal.classList.add('flex');
             });
         });
-
-        cancelBtn.addEventListener('click', () => {
-            deleteModal.classList.add('hidden');
-            deleteModal.classList.remove('flex');
-            formToSubmit = null;
-        });
-
-        confirmBtn.addEventListener('click', () => {
-            if (formToSubmit) {
-                formToSubmit.submit();
-            }
-        });
-
-        deleteModal.addEventListener('click', (event) => {
-            if (event.target === deleteModal) {
-                deleteModal.classList.add('hidden');
-                deleteModal.classList.remove('flex');
-                formToSubmit = null;
-            }
-        });
-    });
-</script>
-@endpush
+    </script>
+    @endpush
+</x-app-layout>

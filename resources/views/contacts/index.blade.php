@@ -1,131 +1,163 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            Messages
+        </h2>
+    </x-slot>
 
-@section('title', 'Boîte de réception - Messages')
+    <style>
+        .kgv-admin{
+            --bg: #0A0C10; --surface: #13161C; --border: #22262E;
+            --text: #ECEDEE; --text-dim: #92979F; --accent: #B08949;
+            background:var(--bg); color:var(--text);
+            font-family:'Inter',sans-serif;
+        }
+        .kgv-admin h1{font-family:'Fraunces',serif;font-weight:500;}
+        .kgv-panel{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+        .kgv-admin table{width:100%;border-collapse:collapse;}
+        .kgv-admin thead th{
+            text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.03em;
+            color:var(--text-dim);font-weight:500;padding:14px 16px;border-bottom:1px solid var(--border);
+        }
+        .kgv-admin tbody td{padding:16px;border-bottom:1px solid var(--border);font-size:0.88rem;vertical-align:middle;}
+        .kgv-admin tbody tr:hover{background:rgba(255,255,255,0.02);}
+        .kgv-sender{font-weight:600;display:flex;align-items:center;gap:8px;}
+        .kgv-sender-email{color:var(--text-dim);font-size:0.8rem;margin-top:2px;}
+        .kgv-subject{font-weight:500;}
+        .kgv-preview{color:var(--text-dim);font-size:0.8rem;margin-top:2px;}
+        .kgv-unread-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+        .kgv-date{color:var(--text-dim);font-size:0.8rem;white-space:nowrap;}
+        .kgv-btn-read{
+            display:inline-flex;align-items:center;padding:7px 14px;background:var(--border);
+            color:var(--text);border-radius:2px;font-size:0.78rem;font-weight:500;
+        }
+        .kgv-btn-read:hover{background:#2c313b;}
+        .action-delete{color:#e08b8b;background:none;border:none;cursor:pointer;font-family:inherit;font-size:0.8rem;padding:0 0 0 14px;}
+        .empty-row{text-align:center;padding:48px 16px;color:var(--text-dim);}
+        .pagination-wrap{padding:16px 20px;border-top:1px solid var(--border);}
 
-@section('content')
-<div class="space-y-6">
-    <!-- En-tête -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-zinc-100">Messages reçus</h1>
-            <p class="text-sm text-zinc-400 mt-1">Consultez les messages envoyés depuis le formulaire de contact de votre portfolio.</p>
-        </div>
-    </div>
+        .kgv-modal-overlay{
+            position:fixed;inset:0;z-index:50;background:rgba(0,0,0,0.6);
+            display:none;align-items:center;justify-content:center;padding:16px;
+        }
+        .kgv-modal-overlay.open{display:flex;}
+        .kgv-modal-box{background:#13161C;border:1px solid #22262E;border-radius:4px;max-width:420px;width:100%;padding:28px;}
+        .kgv-modal-box h3{font-family:'Fraunces',serif;font-weight:500;color:#ECEDEE;font-size:1.1rem;margin-bottom:10px;}
+        .kgv-modal-box p{color:#92979F;font-size:0.85rem;margin-bottom:22px;}
+        .kgv-modal-actions{display:flex;justify-content:flex-end;gap:12px;}
+        .kgv-modal-cancel{background:none;border:1px solid #22262E;color:#ECEDEE;padding:9px 16px;border-radius:2px;font-size:0.85rem;cursor:pointer;}
+        .kgv-modal-confirm{background:#c0524f;border:none;color:#fff;padding:9px 16px;border-radius:2px;font-size:0.85rem;cursor:pointer;}
+    </style>
 
-    <!-- Tableau des messages -->
-    <div class="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-xl">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm text-zinc-300">
-                <thead class="bg-zinc-900 text-xs uppercase text-zinc-400 border-b border-zinc-800">
-                    <tr>
-                        <th scope="col" class="px-6 py-3">Expéditeur</th>
-                        <th scope="col" class="px-6 py-3">Sujet / Aperçu</th>
-                        <th scope="col" class="px-6 py-3">Date</th>
-                        <th scope="col" class="px-6 py-3 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-zinc-800">
-                    @forelse($contacts ?? $messages as $contact)
-                        <tr class="hover:bg-zinc-900/40 transition {{ isset($contact->is_read) && !$contact->is_read ? 'bg-orange-500' : '' }}">
-                            <td class="px-6 py-4">
-                                <div class="font-semibold text-zinc-100 flex items-center gap-2">
-                                    {{ $contact->name ?? $contact->nom }}
-                                    @if(isset($contact->is_read) && !$contact->is_read)
-                                        <span class="w-2 h-2 rounded-full bg-orange-500"></span>
-                                    @endif
-                                </div>
-                                <div class="text-xs text-zinc-400">{{ $contact->email }}</div>
-                            </td>
-                            <td class="px-6 py-4 max-w-xs truncate">
-                                <div class="font-medium text-zinc-200">{{ $contact->subject ?? $contact->sujet ?? 'Sans objet' }}</div>
-                                <div class="text-xs text-zinc-500 truncate">{{ Str::limit($contact->message, 50) }}</div>
-                            </td>
-                            <td class="px-6 py-4 text-xs text-zinc-400 whitespace-nowrap">
-                                {{ $contact->created_at ? $contact->created_at->format('d/m/Y H:i') : 'Récemment' }}
-                            </td>
-                            <td class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
-                                <a href="{{ route('contacts.show', $contact) }}" class="inline-flex items-center px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-medium transition">
-                                    Lire
-                                </a>
-                                
-                                <form action="{{ route('contacts.destroy', $contact) }}" method="POST" class="inline-block form-delete-contact">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="button" class="btn-delete-contact text-zinc-500 hover:text-red-400 transition p-1.5" title="Supprimer">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                        </svg>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="px-6 py-12 text-center text-zinc-500 text-sm">
-                                Votre boîte de réception est vide pour le moment.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if(method_exists($contacts ?? $messages, 'hasPages') && (suppressed = ($contacts ?? $messages)->hasPages()))
-            <div class="px-6 py-4 border-t border-zinc-800">
-                {{ ($contacts ?? $messages)->links() }}
+    <div class="py-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 kgv-admin">
+            <div style="margin-bottom:28px;">
+                <h1 style="font-size:1.5rem;">Messages reçus</h1>
+                <p style="color:var(--text-dim);font-size:0.9rem;margin-top:4px;">
+                    Consultez les messages envoyés depuis le formulaire de contact de votre portfolio.
+                </p>
             </div>
-        @endif
-    </div>
-</div>
 
-<!-- Modale de suppression de message -->
-<div id="delete-contact-modal" class="fixed inset-0 z-50 hidden bg-zinc-950/80 backdrop-blur-sm items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4">
-        <h3 class="text-lg font-bold text-zinc-100">Supprimer le message</h3>
-        <p class="text-sm text-zinc-400">Voulez-vous vraiment supprimer ce message ? Cette action est irréversible.</p>
-        <div class="flex justify-end space-x-3 pt-2">
-            <button id="modal-contact-cancel" type="button" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-lg transition">Annuler</button>
-            <button id="modal-contact-confirm" type="button" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition">Supprimer</button>
+            <div class="kgv-panel">
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Expéditeur</th>
+                                <th>Sujet / Aperçu</th>
+                                <th>Date</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($contacts as $contact)
+                                <tr>
+                                    <td>
+                                        <div class="kgv-sender">
+                                            {{ $contact->nom_expediteur }}
+                                            @if(!$contact->lu)
+                                                <span class="kgv-unread-dot" title="Non lu"></span>
+                                            @endif
+                                        </div>
+                                        <div class="kgv-sender-email">{{ $contact->email_expediteur }}</div>
+                                    </td>
+                                    <td style="max-width:280px;">
+                                        <div class="kgv-subject">{{ $contact->sujet ?? 'Sans objet' }}</div>
+                                        <div class="kgv-preview">{{ \Illuminate\Support\Str::limit($contact->message, 50) }}</div>
+                                    </td>
+                                    <td class="kgv-date">
+                                        {{ $contact->date_envoi ? \Illuminate\Support\Carbon::parse($contact->date_envoi)->format('d/m/Y H:i') : 'Récemment' }}
+                                    </td>
+                                    <td style="text-align:right;white-space:nowrap;">
+                                        <a href="{{ route('contacts.show', $contact) }}" class="kgv-btn-read">Lire</a>
+                                        <form action="{{ route('contacts.destroy', $contact) }}" method="POST" class="form-delete-contact" style="display:inline;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button" class="btn-delete-contact action-delete">Supprimer</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="empty-row">Votre boîte de réception est vide pour le moment.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if($contacts->hasPages())
+                    <div class="pagination-wrap">
+                        {{ $contacts->links() }}
+                    </div>
+                @endif
+            </div>
         </div>
     </div>
-</div>
-@endsection
 
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const deleteModal = document.getElementById('delete-contact-modal');
-        const cancelBtn = document.getElementById('modal-contact-cancel');
-        const confirmBtn = document.getElementById('modal-contact-confirm');
-        let formToSubmit = null;
+    <!-- Modale de suppression -->
+    <div id="delete-contact-modal" class="kgv-modal-overlay">
+        <div class="kgv-modal-box">
+            <h3>Supprimer le message</h3>
+            <p>Voulez-vous vraiment supprimer ce message ? Cette action est irréversible.</p>
+            <div class="kgv-modal-actions">
+                <button id="modal-contact-cancel" type="button" class="kgv-modal-cancel">Annuler</button>
+                <button id="modal-contact-confirm" type="button" class="kgv-modal-confirm">Supprimer</button>
+            </div>
+        </div>
+    </div>
 
-        document.querySelectorAll('.btn-delete-contact').forEach(button => {
-            button.addEventListener('click', (event) => {
-                formToSubmit = event.target.closest('.form-delete-contact');
-                deleteModal.classList.remove('hidden');
-                deleteModal.classList.add('flex');
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const deleteModal = document.getElementById('delete-contact-modal');
+            const cancelBtn = document.getElementById('modal-contact-cancel');
+            const confirmBtn = document.getElementById('modal-contact-confirm');
+            let formToSubmit = null;
+
+            document.querySelectorAll('.btn-delete-contact').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    formToSubmit = event.target.closest('.form-delete-contact');
+                    deleteModal.classList.add('open');
+                });
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                deleteModal.classList.remove('open');
+                formToSubmit = null;
+            });
+
+            confirmBtn.addEventListener('click', () => {
+                if (formToSubmit) formToSubmit.submit();
+            });
+
+            deleteModal.addEventListener('click', (event) => {
+                if (event.target === deleteModal) {
+                    deleteModal.classList.remove('open');
+                    formToSubmit = null;
+                }
             });
         });
-
-        cancelBtn.addEventListener('click', () => {
-            deleteModal.classList.add('hidden');
-            deleteModal.classList.remove('flex');
-            formToSubmit = null;
-        });
-
-        confirmBtn.addEventListener('click', () => {
-            if (formToSubmit) {
-                formToSubmit.submit();
-            }
-        });
-
-        deleteModal.addEventListener('click', (event) => {
-            if (event.target === deleteModal) {
-                deleteModal.classList.add('hidden');
-                deleteModal.classList.remove('flex');
-                formToSubmit = null;
-            }
-        });
-    });
-</script>
-@endpush
+    </script>
+    @endpush
+</x-app-layout>

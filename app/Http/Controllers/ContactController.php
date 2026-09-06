@@ -4,18 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Contact;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class ContactController extends Controller
 {
     // 1. Afficher la boîte de réception (liste des messages reçus)
     public function index()
-    {
-        // Trier par date d'envoi (du plus récent au plus ancien)
-        $contacts = Contact::orderBy('date_envoi', 'desc')->get();
-        
-        // Correction : Ton arborescence indique 'contacts.index', pas 'contacts.edit'
-        return view('contacts.index', compact('contacts'));
-    }
+{
+    $contacts = Contact::orderBy('date_envoi', 'desc')->paginate(15);
+
+    return view('contacts.index', compact('contacts'));
+}
 
     // 2. Afficher un message précis (Lecture complète - lié à show.blade.php)
     public function show($id)
